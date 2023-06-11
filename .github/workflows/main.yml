@@ -1,0 +1,45 @@
+name: Tracing Support Workflow
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Start Jaeger tracing server
+        run: docker run -d -p 6831:6831/udp -p 16686:16686 jaegertracing/all-in-one:latest
+
+      - name: Run Python SDK test
+        run: python -m unittest src/tests/python_sdk_test.py
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 14
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Run JavaScript SDK test
+        run: npm test
+
+      - name: Start Node.js server
+        run: node src/server/app.js
